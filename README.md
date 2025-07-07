@@ -1,6 +1,29 @@
 # PrintMind - 智能排版工具
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D.svg)](https://vuejs.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+
 PrintMind 是一个基于 Web 的智能排版工具，支持 Markdown/Word 文档上传、可视化配置印刷参数、AI 优化排版决策，并能导出印刷级 PDF。
+
+## 🎯 在线体验
+
+### 🚀 一键部署到云端
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/H2Cat96/PrintMind&project-name=printmind&repository-name=printmind)
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/H2Cat96/PrintMind&envs=DEEPSEEK_API_KEY)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/H2Cat96/PrintMind)
+
+### 📱 在线演示
+
+> **即将上线**: 我们正在准备在线演示环境，敬请期待！
+
+## 📸 项目截图
+
+*即将添加项目界面截图...*
 
 ## 🚀 功能特性
 
@@ -27,11 +50,11 @@ PrintMind 是一个基于 Web 的智能排版工具，支持 Markdown/Word 文�
 
 ## 📦 快速开始
 
-### 使用 Docker Compose（推荐）
+### 🚀 一键部署（推荐）
 
 1. **克隆项目**
 ```bash
-git clone <repository-url>
+git clone https://github.com/H2Cat96/PrintMind.git
 cd PrintMind
 ```
 
