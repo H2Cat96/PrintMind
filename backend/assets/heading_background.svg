@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_图层_1" data-name="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" viewBox="0 0 800 200">
+  <!-- Generator: Adobe Illustrator 29.5.1, SVG Export Plug-In . SVG Version: 2.1.0 Build 141)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+      }
+
+      .st1 {
+        clip-path: url(#clippath-1);
+      }
+
+      .st2 {
+        fill: #f08300;
+      }
+
+      .st3 {
+        fill: #f6ab00;
+      }
+
+      .st4 {
+        clip-path: url(#clippath);
+      }
+
+      .st5 {
+        fill: #d3edfb;
+      }
+    </style>
+    <clipPath id="clippath">
+      <rect class="st0" x="211" y="61.72" width="379" height="77.52"/>
+    </clipPath>
+    <clipPath id="clippath-1">
+      <path class="st0" d="M553.02,61.78H226.41c17.13,0,21.57,19.55,21.57,33.78v13.92c0,16.44,12.24,29.76,27.33,29.76h250.39c15.09,0,27.33-13.32,27.33-29.76v-13.92c0-14.24,4.44-33.78,21.57-33.78h-21.57Z"/>
+    </clipPath>
+  </defs>
+  <g class="st4">
+    <path class="st2" d="M590,82.95c0-11.73-4.26-21.23-14.99-21.23l-52.24.17-292.25-.17c-12.48,0-19.51,9.51-19.51,21.23h357.42"/>
+    <path class="st5" d="M553.02,61.78H226.41c17.13,0,21.57,19.55,21.57,33.78v13.92c0,16.44,12.23,29.76,27.33,29.76h250.39c15.09,0,27.33-13.32,27.33-29.76v-13.92c0-14.24,4.44-33.78,21.57-33.78h-21.57Z"/>
+  </g>
+  <g class="st1">
+    <path class="st3" d="M181.18,141.75V59.27h425.86c7.06,0,12.79,5.72,12.79,12.79v56.9c0,7.06-5.73,12.79-12.79,12.79H181.18Z"/>
+  </g>
+</svg>

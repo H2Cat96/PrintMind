@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: printmind-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DEBUG=true
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/generated_pdfs:/app/generated_pdfs
+      - ./backend/fonts:/app/fonts
+    networks:
+      - printmind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端服务
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: printmind-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - printmind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  printmind-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  generated_pdfs:
+  fonts:

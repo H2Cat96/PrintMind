@@ -1,0 +1,21 @@
+services:
+  # 后端服务
+  - type: web
+    name: printmind-backend
+    env: docker
+    dockerfilePath: ./Dockerfile.backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: 1
+    
+  # 前端服务  
+  - type: web
+    name: printmind-frontend
+    env: docker
+    dockerfilePath: ./Dockerfile.frontend
+    plan: free
+    healthCheckPath: /
