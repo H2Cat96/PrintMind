@@ -11,7 +11,7 @@ PrintMind 是一个基于 Web 的智能排版工具，支持 Markdown/Word 文�
 
 ### 🚀 一键部署到云端
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/H2Cat96/PrintMind&project-name=printmind&repository-name=printmind)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/H2Cat96/PrintMind&build-command=cd%20frontend%20%26%26%20npm%20ci%20%26%26%20npm%20run%20build&output-directory=frontend%2Fdist&install-command=cd%20frontend%20%26%26%20npm%20ci)
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/H2Cat96/PrintMind&envs=DEEPSEEK_API_KEY)
 
