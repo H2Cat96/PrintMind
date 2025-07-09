@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # 后端服务
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: printmind-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DOUBAO_API_KEY=${DOUBAO_API_KEY:-2ad1b7d4-5323-4668-b529-2fe275295a7b}
+      - DOUBAO_API_URL=${DOUBAO_API_URL:-https://ark.cn-beijing.volces.com/api/v3/chat/completions}
+      - DOUBAO_MODEL=${DOUBAO_MODEL:-doubao-seed-1-6-250615}
+      - DOUBAO_MAX_TOKENS=${DOUBAO_MAX_TOKENS:-2000}
+      - DOUBAO_TEMPERATURE=${DOUBAO_TEMPERATURE:-0.7}
+      - DEBUG=true
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend/generated_pdfs:/app/generated_pdfs
+      - ./backend/fonts:/app/fonts
+    networks:
+      - printmind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # 前端服务
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: printmind-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - printmind-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  printmind-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  generated_pdfs:
+  fonts:

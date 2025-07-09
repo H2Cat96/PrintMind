@@ -1,0 +1,31 @@
+{
+  "name": "printmind",
+  "version": "1.0.0",
+  "description": "PrintMind - 智能排版工具",
+  "scripts": {
+    "build": "cd frontend && npm ci && npm run build",
+    "dev": "cd frontend && npm run dev",
+    "preview": "cd frontend && npm run preview",
+    "install-frontend": "cd frontend && npm install",
+    "install-backend": "cd backend && pip install -r requirements.txt"
+  },
+  "keywords": [
+    "vue3",
+    "fastapi",
+    "pdf-generation",
+    "markdown",
+    "ai",
+    "layout",
+    "printing"
+  ],
+  "author": "H2Cat96",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/H2Cat96/PrintMind.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
