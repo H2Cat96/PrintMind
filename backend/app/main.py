@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.api import documents, pdf, fonts
+from app.api import documents, pdf, fonts, ai, math
 from app.core.config import settings
 
 # 创建FastAPI应用实例
@@ -37,6 +37,8 @@ if os.path.exists("fonts"):
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
 app.include_router(pdf.router, prefix="/api/pdf", tags=["pdf"])
 app.include_router(fonts.router, prefix="/api/fonts", tags=["fonts"])
+app.include_router(ai.router, prefix="/api/ai", tags=["ai"])
+app.include_router(math.router, prefix="/api/math", tags=["math"])
 
 @app.get("/")
 async def root():

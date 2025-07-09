@@ -20,6 +20,7 @@ from reportlab.lib.pagesizes import A4, A3, letter, legal
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm, inch
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image, PageTemplate, Frame, Flowable
+from reportlab.platypus.flowables import Flowable
 from reportlab.platypus.doctemplate import BaseDocTemplate
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER, TA_LEFT, TA_RIGHT
@@ -28,9 +29,64 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import re
 import platform
+from .math_service import math_service
 
 from app.models.schemas import LayoutConfig
 from app.core.config import settings
+
+
+class MathFormulaFlowable(Flowable):
+    """数学公式Flowable，用于在PDF中嵌入数学公式图片"""
+
+    def __init__(self, image_path: str, width: float = None, height: float = None, inline: bool = True):
+        self.image_path = image_path
+        self.inline = inline
+
+        # 加载图片并获取尺寸
+        try:
+            from PIL import Image as PILImage
+            with PILImage.open(image_path) as img:
+                img_width, img_height = img.size
+
+            # 计算合适的显示尺寸
+            if width and height:
+                self.width = width
+                self.height = height
+            elif width:
+                self.width = width
+                self.height = img_height * (width / img_width)
+            elif height:
+                self.width = img_width * (height / img_height)
+                self.height = height
+            else:
+                # 默认尺寸
+                if inline:
+                    # 行内公式，较小尺寸
+                    max_size = 20
+                    scale = min(max_size / img_width, max_size / img_height)
+                    self.width = img_width * scale
+                    self.height = img_height * scale
+                else:
+                    # 块级公式，较大尺寸
+                    max_size = 100
+                    scale = min(max_size / img_width, max_size / img_height)
+                    self.width = img_width * scale
+                    self.height = img_height * scale
+
+        except Exception as e:
+            print(f"加载数学公式图片失败: {e}")
+            self.width = 50
+            self.height = 20
+
+    def draw(self):
+        """绘制数学公式图片"""
+        try:
+            self.canv.drawImage(self.image_path, 0, 0, width=self.width, height=self.height)
+        except Exception as e:
+            print(f"绘制数学公式失败: {e}")
+            # 绘制一个占位符矩形
+            self.canv.rect(0, 0, self.width, self.height)
+            self.canv.drawString(2, 2, "[公式]")
 
 
 class ImageBackgroundHeading(Flowable):
@@ -1724,6 +1780,9 @@ class PDFService:
     def _markdown_to_pdf_elements(self, content: str, styles: Dict[str, ParagraphStyle], config: LayoutConfig) -> List:
         """将Markdown内容转换为PDF元素"""
 
+        # 预处理：将LaTeX数学公式转换为图片
+        content = self._process_math_formulas(content, config)
+
         story = []
         lines = content.split('\n')
 
@@ -1967,9 +2026,16 @@ class PDFService:
                 paragraph_text = '\n'.join(paragraph_lines)
                 # 将换行符替换为空格，但保持原有的空格数量
                 paragraph_text = paragraph_text.replace('\n', ' ')
-                # 处理简单的Markdown格式
-                paragraph_text = self._process_inline_markdown(paragraph_text)
-                story.append(Paragraph(paragraph_text, styles['normal']))
+                # 检查是否包含LaTeX数学公式
+                if '$' in paragraph_text:
+                    # 处理包含数学公式的段落
+                    math_elements = self._process_paragraph_with_latex(paragraph_text, styles['normal'])
+                    story.extend(math_elements)
+                else:
+                    # 处理简单的Markdown格式
+                    paragraph_text = self._process_inline_markdown(paragraph_text)
+                    # 普通段落处理
+                    story.append(Paragraph(paragraph_text, styles['normal']))
                 continue
 
             i += 1
@@ -2403,8 +2469,40 @@ class PDFService:
 
         return captions
 
+    def _process_math_formulas(self, content: str, config: LayoutConfig) -> str:
+        """处理LaTeX数学公式，暂时保留原始格式，稍后在段落级别处理"""
+        # 暂时不处理数学公式，让它们保持原始的LaTeX格式
+        # 在段落处理时再进行转换
+        return content
+
+    def _save_math_image(self, image_data: bytes, filename_prefix: str) -> Optional[str]:
+        """保存数学公式图片到临时文件"""
+        try:
+            import tempfile
+
+            # 创建临时目录
+            temp_dir = os.path.join(tempfile.gettempdir(), 'printmind_math')
+            os.makedirs(temp_dir, exist_ok=True)
+
+            # 生成文件名
+            filename = f"{filename_prefix}.png"
+            filepath = os.path.join(temp_dir, filename)
+
+            # 保存图片
+            with open(filepath, 'wb') as f:
+                f.write(image_data)
+
+            return filepath
+
+        except Exception as e:
+            print(f"保存数学公式图片失败: {e}")
+            return None
+
     def _process_inline_markdown(self, text: str) -> str:
         """处理行内Markdown格式"""
+
+        # 处理LaTeX数学公式
+        text = self._process_latex_formulas_inline(text)
 
         # 处理HTML字体标签 - 支持用户自定义字体
         # 匹配 <span style="font-family: FontName">text</span> 格式
@@ -2440,6 +2538,202 @@ class PDFService:
 
         return text
 
+    def _process_latex_formulas_inline(self, text: str) -> str:
+        """处理行内LaTeX数学公式，直接替换为占位符"""
+        try:
+            # 处理行内数学公式 $...$
+            def replace_inline_math(match):
+                formula = match.group(1)
+                # 直接返回简单的占位符
+                return "[数学公式]"
+
+            # 处理块级数学公式 $$...$$
+            def replace_display_math(match):
+                formula = match.group(1)
+                # 块级公式也返回占位符
+                return "[数学公式]"
+
+            # 应用替换
+            text = re.sub(r'\$([^$\n]+?)\$', replace_inline_math, text)
+            text = re.sub(r'\$\$([^$]+?)\$\$', replace_display_math, text)
+
+            return text
+
+        except Exception as e:
+            print(f"LaTeX公式处理失败: {e}")
+            return text
+
+    def _process_math_markers(self, text: str) -> str:
+        """处理数学公式标记，直接替换为占位符文本"""
+        try:
+            # 处理行内数学公式标记 [MATH_INLINE:path]
+            def replace_inline_math_marker(match):
+                image_path = match.group(1)
+                # 直接返回占位符，表示这里是数学公式
+                return "[数学公式]"
+
+            # 处理块级数学公式标记 [MATH_DISPLAY:path]
+            def replace_display_math_marker(match):
+                image_path = match.group(1)
+                # 块级公式也返回占位符
+                return "[数学公式]"
+
+            # 应用替换
+            text = re.sub(r'\[MATH_INLINE:(.*?)\]', replace_inline_math_marker, text)
+            text = re.sub(r'\[MATH_DISPLAY:(.*?)\]', replace_display_math_marker, text)
+
+            return text
+
+        except Exception as e:
+            print(f"数学公式标记处理失败: {e}")
+            return text
+
+    def _create_paragraph_with_math(self, text: str, style: ParagraphStyle) -> List:
+        """创建包含数学公式的段落元素"""
+        elements = []
+
+        try:
+            # 处理块级数学公式（独立成行）
+            if '[DISPLAY_MATH:' in text:
+                parts = re.split(r'\[DISPLAY_MATH:(.*?)\]', text)
+                for i, part in enumerate(parts):
+                    if i % 2 == 0:
+                        # 文本部分
+                        if part.strip():
+                            elements.append(Paragraph(part.strip(), style))
+                    else:
+                        # 数学公式路径
+                        img_element = self._process_image_for_pdf(part, max_width=400, max_height=200)
+                        if img_element:
+                            elements.append(img_element)
+                        else:
+                            elements.append(Paragraph("[数学公式加载失败]", style))
+                return elements
+
+            # 处理行内数学公式
+            if '[INLINE_MATH:' in text:
+                # 对于行内公式，我们需要创建一个包含文本和图片的复合段落
+                # 但ReportLab的Paragraph不支持内联图片，所以我们分段处理
+                parts = re.split(r'\[INLINE_MATH:(.*?)\]', text)
+                current_text = ""
+
+                for i, part in enumerate(parts):
+                    if i % 2 == 0:
+                        # 文本部分
+                        current_text += part
+                    else:
+                        # 数学公式路径
+                        # 先添加当前累积的文本
+                        if current_text.strip():
+                            elements.append(Paragraph(current_text.strip(), style))
+                            current_text = ""
+
+                        # 添加数学公式图片
+                        img_element = self._process_image_for_pdf(part, max_width=100, max_height=30)
+                        if img_element:
+                            elements.append(img_element)
+                        else:
+                            elements.append(Paragraph("[公式]", style))
+
+                # 添加剩余的文本
+                if current_text.strip():
+                    elements.append(Paragraph(current_text.strip(), style))
+
+                return elements
+
+            # 如果没有数学公式，返回普通段落
+            return [Paragraph(text, style)]
+
+        except Exception as e:
+            print(f"创建数学公式段落失败: {e}")
+            return [Paragraph(text.replace('[INLINE_MATH:', '[公式:').replace('[DISPLAY_MATH:', '[公式:'), style)]
+
+    def _process_paragraph_with_latex(self, text: str, style: ParagraphStyle) -> List:
+        """处理包含LaTeX数学公式的段落"""
+        elements = []
+
+        try:
+            # 首先处理块级公式 $$...$$
+            if '$$' in text:
+                parts = re.split(r'\$\$([^$]+?)\$\$', text)
+                for i, part in enumerate(parts):
+                    if i % 2 == 0:
+                        # 文本部分，不再递归处理
+                        if part.strip():
+                            # 普通文本，直接处理
+                            processed_text = self._process_inline_markdown(part)
+                            elements.append(Paragraph(processed_text, style))
+                    else:
+                        # 块级数学公式
+                        formula = part
+                        image_data = math_service.latex_to_image(formula, font_size=10)  # 提高字体大小以增加清晰度
+                        if image_data:
+                            temp_file = self._save_math_image(image_data, f"display_math_{hash(formula)}")
+                            if temp_file:
+                                img_element = self._process_image_for_pdf(temp_file, max_width=200, max_height=100)  # 缩小50%
+                                if img_element:
+                                    elements.append(img_element)
+                                else:
+                                    elements.append(Paragraph("[数学公式加载失败]", style))
+                            else:
+                                elements.append(Paragraph("[数学公式保存失败]", style))
+                        else:
+                            elements.append(Paragraph(f"$${formula}$$", style))
+                return elements
+
+            # 处理行内公式 $...$
+            if '$' in text:
+                # 分割文本和行内公式，创建多个元素
+                parts = re.split(r'\$([^$\n]+?)\$', text)
+                current_text = ""
+
+                for i, part in enumerate(parts):
+                    if i % 2 == 0:
+                        # 文本部分
+                        current_text += part
+                    else:
+                        # 行内数学公式
+                        formula = part
+                        print(f"处理行内公式: {formula}")
+
+                        # 先添加当前累积的文本
+                        if current_text.strip():
+                            processed_text = self._process_inline_markdown(current_text)
+                            elements.append(Paragraph(processed_text, style))
+                            current_text = ""
+
+                        # 添加数学公式图片
+                        image_data = math_service.latex_to_image(formula, font_size=10)
+                        if image_data:
+                            temp_file = self._save_math_image(image_data, f"inline_math_{hash(formula)}")
+                            if temp_file:
+                                print(f"行内公式图片保存到: {temp_file}")
+                                img_element = self._process_image_for_pdf(temp_file, max_width=100, max_height=30)
+                                if img_element:
+                                    elements.append(img_element)
+                                else:
+                                    current_text += "[公式]"
+                            else:
+                                current_text += "[公式]"
+                        else:
+                            current_text += f"${formula}$"
+
+                # 添加剩余的文本
+                if current_text.strip():
+                    processed_text = self._process_inline_markdown(current_text)
+                    elements.append(Paragraph(processed_text, style))
+
+                return elements
+
+            # 如果没有数学公式，返回普通段落
+            processed_text = self._process_inline_markdown(text)
+            return [Paragraph(processed_text, style)]
+
+        except Exception as e:
+            print(f"处理LaTeX段落失败: {e}")
+            processed_text = self._process_inline_markdown(text)
+            return [Paragraph(processed_text, style)]
+
     def _process_geometric_shapes(self, text: str) -> str:
         """处理几何图形标记"""
 
@@ -2447,10 +2741,8 @@ class PDFService:
         # □ - 正方形（空心正方形）
         # ○ - 圆形（空心圆形）
 
-        # 设置固定尺寸为50，确保几何图形字符使用黑色显示
-        text = re.sub(r'□', '<font color="#000000" size="20">□</font>', text)
-        text = re.sub(r'○', '<font color="#000000" size="20">○</font>', text)
-
+        # 不使用font标签，直接保持原始字符，让ReportLab使用当前字体渲染
+        # 这样可以避免基线偏移问题
         return text
 
 

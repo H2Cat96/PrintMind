@@ -10,7 +10,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - DOUBAO_API_KEY=${DOUBAO_API_KEY:-2ad1b7d4-5323-4668-b529-2fe275295a7b}
+      - DOUBAO_API_URL=${DOUBAO_API_URL:-https://ark.cn-beijing.volces.com/api/v3/chat/completions}
+      - DOUBAO_MODEL=${DOUBAO_MODEL:-doubao-seed-1-6-250615}
+      - DOUBAO_MAX_TOKENS=${DOUBAO_MAX_TOKENS:-2000}
+      - DOUBAO_TEMPERATURE=${DOUBAO_TEMPERATURE:-0.7}
       - DEBUG=true
     volumes:
       - ./backend/uploads:/app/uploads

@@ -38,7 +38,14 @@ class Settings(BaseSettings):
     # 字体设置
     FONT_DIR: str = "fonts"
     DEFAULT_FONT: str = "NotoSansCJK-Regular.ttc"
-    
+
+    # Doubao AI设置
+    DOUBAO_API_KEY: str = "2ad1b7d4-5323-4668-b529-2fe275295a7b"
+    DOUBAO_API_URL: str = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
+    DOUBAO_MODEL: str = "doubao-seed-1-6-250615"
+    DOUBAO_MAX_TOKENS: int = 2000
+    DOUBAO_TEMPERATURE: float = 0.7
+
     class Config:
         env_file = ".env"
         case_sensitive = True

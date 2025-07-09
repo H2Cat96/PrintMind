@@ -4,6 +4,7 @@ import FileUpload from '@/components/FileUpload.vue'
 import ConfigPanel from '@/components/ConfigPanel.vue'
 import EditorPreview from '@/components/EditorPreview.vue'
 import EditorToolbar from '@/components/EditorToolbar.vue'
+import AIChat from '@/components/AIChat.vue'
 import type { LayoutConfig } from '@/types/layout'
 
 // 响应式数据
@@ -14,6 +15,7 @@ const selectedText = ref('')
 const canUndo = ref(false)
 const canRedo = ref(false)
 const showAnswers = ref(true) // 控制是否显示答案和解析内容
+const showAIChat = ref(false) // 控制AI聊天面板显示
 
 const layoutConfig = reactive<LayoutConfig>({
   page_format: 'A4',
@@ -139,6 +141,16 @@ const toggleVersion = () => {
     editorPreviewRef.value.refreshPreview()
   }
 }
+
+const toggleAIChat = () => {
+  showAIChat.value = !showAIChat.value
+}
+
+const closeAIChat = () => {
+  showAIChat.value = false
+}
+
+
 </script>
 
 <template>
@@ -160,6 +172,21 @@ const toggleVersion = () => {
             </div>
           </div>
           <div class="flex items-center space-x-3">
+            <!-- AI助手按钮 -->
+            <button
+              @click="toggleAIChat"
+              :class="[
+                'modern-btn-secondary',
+                showAIChat ? 'bg-purple-50 border-purple-200 text-purple-700' : 'bg-gray-50 border-gray-200 text-gray-700'
+              ]"
+              title="AI排版助手"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+              </svg>
+              AI助手
+            </button>
+
             <button
               @click="toggleVersion"
               :class="[
@@ -220,7 +247,7 @@ const toggleVersion = () => {
     </header>
 
     <!-- 主要内容区域 -->
-    <main class="w-full px-6 lg:px-8 py-6">
+    <main class="w-full px-6 lg:px-8 py-6 relative">
       <div class="grid grid-cols-1 gap-6 h-full">
 
         <!-- 左侧：文件上传和工具栏 -->
@@ -278,6 +305,19 @@ const toggleVersion = () => {
           </div>
         </div>
 
+      </div>
+
+      <!-- AI聊天面板 -->
+      <div
+        v-if="showAIChat"
+        class="fixed top-20 right-6 w-96 h-[600px] z-50 transform transition-all duration-300"
+        :class="showAIChat ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'"
+      >
+        <AIChat
+          :document-content="markdownContent"
+          :current-config="layoutConfig"
+          @close="closeAIChat"
+        />
       </div>
     </main>
   </div>

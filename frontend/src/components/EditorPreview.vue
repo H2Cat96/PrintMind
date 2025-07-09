@@ -97,6 +97,23 @@
         <div class="h-full flex flex-col bg-gradient-to-br from-gray-50/50 to-white/50">
           <!-- 编辑器 -->
           <div class="flex-1 overflow-hidden relative">
+            <!-- 错误高亮层 -->
+            <div
+              ref="highlightLayerRef"
+              class="highlight-layer"
+              :style="highlightLayerStyle"
+            >
+              <div
+                v-for="error in errorHighlights"
+                :key="`${error.start}-${error.end}`"
+                class="error-highlight"
+                :class="getErrorClass(error.type)"
+                :style="getErrorStyle(error)"
+                :title="error.message"
+                @click="showErrorDetails(error)"
+              ></div>
+            </div>
+
             <textarea
               ref="textareaRef"
               v-model="content"
@@ -143,12 +160,33 @@
               </div>
             </div>
             <div class="flex items-center space-x-2 text-gray-500">
+              <!-- 数学工具栏按钮 -->
+              <button
+                @click="toggleMathToolbar"
+                :class="[
+                  'flex items-center space-x-1 px-2 py-1 rounded text-xs transition-colors',
+                  showMathToolbar ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'
+                ]"
+                title="数学公式工具"
+              >
+                <span class="text-sm">∑</span>
+                <span>公式</span>
+              </button>
+
               <div class="flex items-center space-x-1">
                 <div class="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>Markdown</span>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- 数学工具栏 -->
+        <div
+          v-if="showMathToolbar"
+          class="absolute top-4 right-4 z-20 w-80"
+        >
+          <MathToolbar @insert-formula="insertMathFormula" />
         </div>
       </div>
 
@@ -331,6 +369,8 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { pdfAPI } from '@/utils/api'
 import ImageControl from './ImageControl.vue'
+import MathToolbar from './MathToolbar.vue'
+import MarkdownRenderer from './MarkdownRenderer.vue'
 
 import type { LayoutConfig, FontInfo } from '@/types/layout'
 
@@ -380,6 +420,20 @@ const selectedImageText = ref('')
 const cursorPosition = ref({ x: 0, y: 0 })
 const imageControlRef = ref()
 
+// 错误高亮相关
+const errorHighlights = ref<Array<{
+  start: number
+  end: number
+  type: string
+  message: string
+  text: string
+  line: number
+}>>([])
+const highlightLayerRef = ref<HTMLDivElement>()
+const showErrorTooltip = ref(false)
+const errorTooltipContent = ref('')
+const errorTooltipPosition = ref({ x: 0, y: 0 })
+
 // 字体选择相关
 const showFontSelector = ref(false)
 const selectedText = ref('')
@@ -391,6 +445,9 @@ const availableFonts = ref<FontInfo[]>([
   { name: 'Arial', family: 'Arial', style: 'Regular', file_path: '', supports_chinese: false },
   { name: 'Times New Roman', family: 'Times New Roman', style: 'Regular', file_path: '', supports_chinese: false }
 ])
+
+// 数学工具栏相关
+const showMathToolbar = ref(false)
 
 // 字体选择器样式计算
 const fontSelectorStyle = computed(() => ({
@@ -446,6 +503,38 @@ const canUndo = computed(() => {
 
 const canRedo = computed(() => {
   return historyIndex.value < history.value.length - 1
+})
+
+// 高亮层样式计算属性
+const highlightLayerStyle = computed(() => {
+  const textarea = textareaRef.value
+  if (!textarea) {
+    console.log('No textarea for highlight layer style')
+    return {}
+  }
+
+  const computedStyle = getComputedStyle(textarea)
+  const style = {
+    position: 'absolute' as const,
+    top: '0',
+    left: '0',
+    width: '100%',
+    height: '100%',
+    pointerEvents: 'none' as const,
+    fontSize: computedStyle.fontSize,
+    fontFamily: computedStyle.fontFamily,
+    lineHeight: computedStyle.lineHeight,
+    padding: computedStyle.padding,
+    margin: computedStyle.margin,
+    border: 'transparent',
+    overflow: 'hidden' as const,
+    whiteSpace: 'pre-wrap' as const,
+    wordWrap: 'break-word' as const,
+    zIndex: 5
+  }
+
+  console.log('Highlight layer style:', style)
+  return style
 })
 
 // 监听内容变化
@@ -1030,20 +1119,24 @@ const applyFontToSelection = (fontFamily: string) => {
   showFontSelector.value = false
   selectedText.value = ''
 
-  preserveScrollPosition(() => {
-    // 替换选中的文本
-    content.value = content.value.substring(0, start) + fontMarkdown + content.value.substring(end)
+  // 替换选中的文本
+  content.value = content.value.substring(0, start) + fontMarkdown + content.value.substring(end)
 
-    // 重新聚焦编辑器并设置光标位置
-    nextTick(() => {
-      textarea.focus({ preventScroll: true })
-      const newCursorPos = start + fontMarkdown.length
-      textarea.setSelectionRange(newCursorPos, newCursorPos)
-      updateCursorPosition()
-      // 应用字体后保存历史记录
-      saveToHistory()
-    })
+  // 设置新的光标位置
+  nextTick(() => {
+    textarea.focus()
+    textarea.setSelectionRange(start + fontMarkdown.length, start + fontMarkdown.length)
   })
+}
+
+// 数学工具栏相关方法
+const toggleMathToolbar = () => {
+  showMathToolbar.value = !showMathToolbar.value
+}
+
+const insertMathFormula = (formula: string) => {
+  insertAtCursor(formula)
+  showMathToolbar.value = false
 }
 
 // 加载可用字体 - 现在使用固定的精简字体列表
@@ -1119,6 +1212,136 @@ const onImagePanelClosed = () => {
   selectedImageText.value = ''
 }
 
+// 错误高亮相关方法
+const getErrorClass = (errorType: string) => {
+  const baseClass = 'error-highlight'
+  switch (errorType) {
+    case 'spelling':
+      return `${baseClass} error-spelling`
+    case 'grammar':
+      return `${baseClass} error-grammar`
+    case 'format':
+      return `${baseClass} error-format`
+    case 'punctuation':
+      return `${baseClass} error-punctuation`
+    default:
+      return `${baseClass} error-general`
+  }
+}
+
+const getErrorStyle = (error: any) => {
+  const textarea = textareaRef.value
+  if (!textarea) {
+    console.log('No textarea ref available')
+    return {}
+  }
+
+  console.log('Calculating style for error:', error)
+
+  // 计算错误文本在编辑器中的位置
+  const textBeforeError = content.value.substring(0, error.start)
+  const lines = textBeforeError.split('\n')
+  const lineNumber = lines.length - 1
+  const columnNumber = lines[lines.length - 1].length
+
+  console.log(`Error position: line ${lineNumber}, column ${columnNumber}`)
+
+  // 获取文本样式信息
+  const computedStyle = getComputedStyle(textarea)
+  const lineHeight = parseFloat(computedStyle.lineHeight) || 24
+  const fontSize = parseFloat(computedStyle.fontSize) || 16
+  const paddingTop = parseFloat(computedStyle.paddingTop) || 0
+  const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0
+
+  console.log(`Style info: lineHeight=${lineHeight}, fontSize=${fontSize}`)
+
+  // 计算位置
+  const top = paddingTop + (lineNumber * lineHeight)
+  const left = paddingLeft + (columnNumber * (fontSize * 0.6)) // 近似字符宽度
+
+  // 计算错误文本的宽度
+  const errorText = content.value.substring(error.start, error.end)
+  const width = Math.max(errorText.length * (fontSize * 0.6), 20) // 最小宽度20px
+
+  const style = {
+    position: 'absolute' as const,
+    top: `${top}px`,
+    left: `${left}px`,
+    width: `${width}px`,
+    height: `${lineHeight}px`,
+    pointerEvents: 'auto' as const,
+    zIndex: 10
+  }
+
+  console.log('Calculated style:', style)
+  return style
+}
+
+const showErrorDetails = (error: any) => {
+  // 显示错误详情的逻辑
+  console.log('Error details:', error)
+  alert(`错误类型: ${error.type}\n错误信息: ${error.message}\n位置: 第${error.line}行`)
+}
+
+// 设置错误高亮
+const setErrorHighlights = (errors: Array<any>) => {
+  console.log('EditorPreview setErrorHighlights called with:', errors)
+  errorHighlights.value = errors
+  console.log('errorHighlights.value updated to:', errorHighlights.value)
+
+  // 强制重新渲染
+  nextTick(() => {
+    console.log('After nextTick, errorHighlights.value:', errorHighlights.value)
+  })
+}
+
+// 跳转到指定行
+const jumpToLine = (lineNumber: number) => {
+  console.log('Jumping to line in editor:', lineNumber)
+
+  const textarea = textareaRef.value
+  if (!textarea) {
+    console.error('Textarea not found')
+    return
+  }
+
+  const lines = content.value.split('\n')
+  if (lineNumber < 1 || lineNumber > lines.length) {
+    console.error('Invalid line number:', lineNumber)
+    return
+  }
+
+  // 计算目标行的字符位置
+  const targetPosition = lines.slice(0, lineNumber - 1).join('\n').length + (lineNumber > 1 ? 1 : 0)
+
+  // 设置光标位置
+  textarea.focus()
+  textarea.setSelectionRange(targetPosition, targetPosition + lines[lineNumber - 1].length)
+
+  // 滚动到可见区域
+  const lineHeight = 24 // 估算行高
+  const scrollTop = (lineNumber - 1) * lineHeight - textarea.clientHeight / 2
+  textarea.scrollTop = Math.max(0, scrollTop)
+
+  console.log(`Jumped to line ${lineNumber}, position ${targetPosition}`)
+}
+
+// 测试高亮功能
+const testHighlightInEditor = () => {
+  console.log('Testing highlight directly in editor')
+  const testErrors = [
+    {
+      start: 0,
+      end: 5,
+      type: 'spelling',
+      message: '直接测试高亮',
+      text: content.value.substring(0, 5),
+      line: 1
+    }
+  ]
+  setErrorHighlights(testErrors)
+}
+
 // 暴露方法给父组件
 defineExpose({
   focus: focusEditor,
@@ -1132,7 +1355,9 @@ defineExpose({
   undo,
   redo,
   canUndo,
-  canRedo
+  canRedo,
+  setErrorHighlights,
+  jumpToLine
 })
 </script>
 
@@ -1282,6 +1507,56 @@ defineExpose({
 
 .editor-preview {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* 错误高亮样式 */
+.highlight-layer {
+  z-index: 10;
+  pointer-events: none;
+}
+
+.error-highlight {
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+  min-height: 20px;
+  min-width: 20px;
+}
+
+.error-highlight:hover {
+  opacity: 0.8;
+  transform: scale(1.02);
+}
+
+.error-spelling {
+  background-color: rgba(239, 68, 68, 0.3);
+  border: 2px solid #ef4444;
+  border-bottom: 3px wavy #ef4444;
+}
+
+.error-grammar {
+  background-color: rgba(59, 130, 246, 0.3);
+  border: 2px solid #3b82f6;
+  border-bottom: 3px wavy #3b82f6;
+}
+
+.error-format {
+  background-color: rgba(168, 85, 247, 0.3);
+  border: 2px solid #a855f7;
+  border-bottom: 3px wavy #a855f7;
+}
+
+.error-punctuation {
+  background-color: rgba(245, 158, 11, 0.3);
+  border: 2px solid #f59e0b;
+  border-bottom: 3px wavy #f59e0b;
+}
+
+.error-general {
+  background-color: rgba(107, 114, 128, 0.3);
+  border: 2px solid #6b7280;
+  border-bottom: 3px wavy #6b7280;
 }
 
 /* 响应式优化 */

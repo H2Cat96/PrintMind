@@ -133,6 +133,66 @@ export const fontAPI = {
   }
 }
 
+// AI相关API
+export const aiAPI = {
+  // 聊天对话
+  chat: async (message: string, conversationHistory?: Array<{role: string, content: string}>) => {
+    return api.post('/api/ai/chat', {
+      message,
+      conversation_history: conversationHistory
+    })
+  },
+
+  // 图像分析
+  analyzeImage: async (file: File, question: string = '请分析这张图片的内容') => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('question', question)
+
+    return api.post('/api/ai/analyze-image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  // 获取排版建议
+  getLayoutSuggestions: async (content: string, currentConfig: any) => {
+    return api.post('/api/ai/layout-suggestions', {
+      content,
+      current_config: currentConfig
+    })
+  },
+
+  // 生成考试题目
+  generateExam: async (content: string, questionType: string = '选择题', count: number = 5) => {
+    return api.post('/api/ai/generate-exam', {
+      content,
+      question_type: questionType,
+      count
+    })
+  },
+
+  // AI服务健康检查
+  healthCheck: async () => {
+    return api.get('/api/ai/health')
+  },
+
+  // 获取可用模型
+  getModels: async () => {
+    return api.get('/api/ai/models')
+  },
+
+  // 文档校验
+  proofreadDocument: async (content: string, checkType: string = 'comprehensive', withHighlights: boolean = true) => {
+    return api.post('/api/ai/proofread', {
+      content,
+      check_type: checkType,
+      with_highlights: withHighlights
+    })
+  }
+}
+
 // 通用API工具
 export const apiUtils = {
   // 健康检查
