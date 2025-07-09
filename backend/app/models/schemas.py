@@ -3,7 +3,7 @@
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from enum import Enum
 
 class DocumentType(str, Enum):
@@ -65,21 +65,7 @@ class LayoutConfig(BaseModel):
     # 内容控制
     show_answers: bool = Field(default=True, description="显示答案和解析")
 
-class AIOptimizationRequest(BaseModel):
-    """AI优化请求"""
-    content: str
-    layout_config: LayoutConfig
-    optimization_goals: List[str] = Field(
-        default=["readability", "aesthetics", "print_quality"],
-        description="优化目标"
-    )
 
-class AIOptimizationResponse(BaseModel):
-    """AI优化响应"""
-    optimized_config: LayoutConfig
-    suggestions: List[str]
-    confidence_score: float = Field(ge=0, le=1)
-    reasoning: str
 
 # PDF生成相关模型
 class PDFGenerationRequest(BaseModel):

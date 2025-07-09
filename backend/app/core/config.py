@@ -4,7 +4,6 @@
 
 from pydantic_settings import BaseSettings
 from typing import List
-import os
 
 class Settings(BaseSettings):
     """应用设置类"""
@@ -35,12 +34,7 @@ class Settings(BaseSettings):
         "left": "2cm",
         "right": "2cm"
     }
-    
-    # AI设置
-    DEEPSEEK_API_KEY: str = os.getenv("DEEPSEEK_API_KEY", "")
-    DEEPSEEK_BASE_URL: str = "https://api.deepseek.com/v1"
-    AI_MODEL: str = "deepseek-chat"
-    
+
     # 字体设置
     FONT_DIR: str = "fonts"
     DEFAULT_FONT: str = "NotoSansCJK-Regular.ttc"

@@ -36,7 +36,6 @@ PrintMind 是一个基于 Web 的智能排版工具，支持 Markdown/Word 文�
 
 ### 后端功能
 - 🔄 **格式转换**: Word 转 Markdown 服务
-- 🤖 **AI 优化**: 基于 DeepSeek API 的智能排版建议
 - 📄 **PDF 生成**: 使用 WeasyPrint 生成高质量 PDF，支持 CMYK 和出血
 - 🎨 **字体管理**: 系统字体检测和中文字体支持
 - ✅ **参数验证**: 排版参数合理性检查
@@ -45,7 +44,6 @@ PrintMind 是一个基于 Web 的智能排版工具，支持 Markdown/Word 文�
 
 - **前端**: Vue 3 + TypeScript + Tailwind CSS
 - **后端**: FastAPI + WeasyPrint + Python-docx
-- **AI**: DeepSeek API
 - **部署**: Docker + Docker Compose
 
 ## 📦 快速开始
@@ -58,10 +56,10 @@ git clone https://github.com/H2Cat96/PrintMind.git
 cd PrintMind
 ```
 
-2. **配置环境变量**
+2. **配置环境变量（可选）**
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，填入 DeepSeek API Key
+# 根据需要编辑 .env 文件
 ```
 
 3. **启动服务**
@@ -174,12 +172,9 @@ PrintMind/
 - **段落设置**: 配置段落间距和首行缩进
 - **印刷设置**: 选择颜色模式和出血设置
 
-### 3. AI 优化
-- 点击"AI 智能优化"按钮
-- 系统会分析文档内容并提供优化建议
-- 自动调整排版参数以提高可读性
 
-### 4. 预览和导出
+
+### 3. 预览和导出
 - **HTML 预览**: 实时查看排版效果
 - **PDF 预览**: 生成 PDF 预览
 - **导出选项**: 选择质量和格式进行导出
@@ -218,11 +213,9 @@ npm run test
    - 检查 WeasyPrint 依赖是否正确安装
    - 确认字体文件存在且可访问
 
-2. **AI 优化不工作**
-   - 检查 DeepSeek API Key 是否正确配置
-   - 确认网络连接正常
 
-3. **文件上传失败**
+
+2. **文件上传失败**
    - 检查文件大小是否超过限制
    - 确认文件格式是否支持
 

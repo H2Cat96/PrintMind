@@ -1,6 +1,6 @@
 """
 PrintMind 后端主应用
-支持文档上传、AI排版优化、PDF生成等功能
+支持文档上传、排版配置、PDF生成等功能
 """
 
 from fastapi import FastAPI
@@ -8,13 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.api import documents, layout, pdf, fonts
+from app.api import documents, pdf, fonts
 from app.core.config import settings
 
 # 创建FastAPI应用实例
 app = FastAPI(
     title="PrintMind API",
-    description="智能排版工具后端API",
+    description="专业排版工具后端API",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
@@ -35,7 +35,6 @@ if os.path.exists("fonts"):
 
 # 注册API路由
 app.include_router(documents.router, prefix="/api/documents", tags=["documents"])
-app.include_router(layout.router, prefix="/api/layout", tags=["layout"])
 app.include_router(pdf.router, prefix="/api/pdf", tags=["pdf"])
 app.include_router(fonts.router, prefix="/api/fonts", tags=["fonts"])
 

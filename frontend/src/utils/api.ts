@@ -3,10 +3,8 @@
  */
 
 import axios from 'axios'
-import type { 
-  LayoutConfig, 
-  AIOptimizationRequest, 
-  AIOptimizationResponse,
+import type {
+  LayoutConfig,
   PDFGenerationRequest,
   PDFGenerationResponse,
   DocumentUploadResponse,
@@ -77,26 +75,6 @@ export const documentAPI = {
       target_format: targetFormat
     })
   }
-}
-
-// 排版相关API
-export const layoutAPI = {
-  // AI优化排版
-  optimize: async (request: AIOptimizationRequest): Promise<AIOptimizationResponse> => {
-    return api.post('/api/layout/optimize', request)
-  },
-
-  // 分析内容
-  analyze: async (content: string) => {
-    return api.post('/api/layout/analyze', { content })
-  },
-
-  // 验证配置
-  validate: async (config: LayoutConfig) => {
-    return api.post('/api/layout/validate', config)
-  },
-
-
 }
 
 // PDF相关API

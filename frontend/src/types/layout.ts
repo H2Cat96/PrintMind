@@ -36,18 +36,7 @@ export interface LayoutConfig {
   show_answers?: boolean
 }
 
-export interface AIOptimizationRequest {
-  content: string
-  layout_config: LayoutConfig
-  optimization_goals: string[]
-}
 
-export interface AIOptimizationResponse {
-  optimized_config: LayoutConfig
-  suggestions: string[]
-  confidence_score: number
-  reasoning: string
-}
 
 export interface PDFGenerationRequest {
   content: string
