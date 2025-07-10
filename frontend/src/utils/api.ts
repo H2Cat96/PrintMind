@@ -22,6 +22,10 @@ const api = axios.create({
   }
 })
 
+// 调试信息
+console.log('API Base URL:', import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000')
+console.log('Environment:', import.meta.env.MODE)
+
 // 请求拦截器
 api.interceptors.request.use(
   (config) => {
