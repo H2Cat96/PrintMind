@@ -26,12 +26,6 @@ async def upload_document(file: UploadFile = File(...)):
     支持 .md, .docx, .txt 格式
     """
     try:
-        print(f"收到文件上传请求: {file.filename}, 类型: {file.content_type}")
-
-        # 验证文件名
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="文件名不能为空")
-
         # 验证文件类型
         file_extension = os.path.splitext(file.filename)[1].lower()
         if file_extension not in settings.ALLOWED_EXTENSIONS:

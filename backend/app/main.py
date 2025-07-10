@@ -23,9 +23,9 @@ app = FastAPI(
 # 配置CORS中间件
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境允许所有来源
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

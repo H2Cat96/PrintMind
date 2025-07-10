@@ -191,13 +191,16 @@ test_*.py
 test_*.pdf
 test_*.md
 test_*.html
+test_*.json
 *_test.py
 *_test.pdf
+*_test.json
 debug_*.py
 diagnose_*.py
 comprehensive_*.py
 final_*.py
 simple_*.py
+network-image-test*.json
 
 # Chinese named files (often test files)
 *中文*.pdf
