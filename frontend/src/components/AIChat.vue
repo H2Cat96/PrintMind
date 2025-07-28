@@ -14,14 +14,25 @@
             <p class="text-sm opacity-90">为您提供专业的排版建议</p>
           </div>
         </div>
-        <button 
-          @click="$emit('close')"
-          class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
+        <div class="flex items-center space-x-2">
+          <button
+            @click="clearChatHistory"
+            class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+            title="清除聊天记录"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </button>
+          <button
+            @click="$emit('close')"
+            class="text-white hover:bg-white hover:bg-opacity-20 rounded-full p-2 transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -320,6 +331,9 @@ const emit = defineEmits<{
   close: []
 }>()
 
+// 会话存储键名
+const CHAT_STORAGE_KEY = 'printmind-ai-chat-messages'
+
 // 响应式数据
 const messages = ref<Array<{
   role: 'user' | 'assistant'
@@ -343,6 +357,56 @@ const selectedQuestionCount = ref('5')
 const imageQuestion = ref('请分析这张图片的内容')
 const selectedFile = ref<File | null>(null)
 
+// 保存消息到会话存储
+const saveMessagesToStorage = () => {
+  try {
+    const messagesToSave = messages.value.map(msg => ({
+      ...msg,
+      timestamp: msg.timestamp.toISOString() // 转换为字符串以便存储
+    }))
+    sessionStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messagesToSave))
+  } catch (error) {
+    console.warn('Failed to save chat messages to storage:', error)
+  }
+}
+
+// 从会话存储加载消息
+const loadMessagesFromStorage = () => {
+  try {
+    const stored = sessionStorage.getItem(CHAT_STORAGE_KEY)
+    if (stored) {
+      const parsedMessages = JSON.parse(stored)
+      return parsedMessages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp) // 转换回Date对象
+      }))
+    }
+  } catch (error) {
+    console.warn('Failed to load chat messages from storage:', error)
+  }
+  return null
+}
+
+// 清除聊天记录
+const clearChatHistory = () => {
+  if (confirm('确定要清除所有聊天记录吗？此操作无法撤销。')) {
+    messages.value = []
+    sessionStorage.removeItem(CHAT_STORAGE_KEY)
+
+    // 添加欢迎消息
+    messages.value.push({
+      role: 'assistant',
+      content: '您好！我是PrintMind的AI排版助手。我可以帮您：\n\n• 分析文档并提供排版建议\n• 根据内容生成考试题目\n• 分析图片内容\n• 回答排版相关问题\n\n请告诉我您需要什么帮助？',
+      timestamp: new Date()
+    })
+    saveMessagesToStorage()
+
+    nextTick(() => {
+      scrollToBottom()
+    })
+  }
+}
+
 // 方法
 const scrollToBottom = async () => {
   await nextTick()
@@ -365,6 +429,7 @@ const sendMessage = async () => {
     content: userMessage,
     timestamp: new Date()
   })
+  saveMessagesToStorage()
 
   await scrollToBottom()
 
@@ -384,6 +449,7 @@ const sendMessage = async () => {
       content: response.reply,
       timestamp: new Date()
     })
+    saveMessagesToStorage()
   } catch (error) {
     console.error('Chat error:', error)
     messages.value.push({
@@ -391,6 +457,7 @@ const sendMessage = async () => {
       content: '抱歉，我遇到了一些问题。请稍后再试。',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
   } finally {
     isLoading.value = false
     await scrollToBottom()
@@ -442,6 +509,7 @@ const confirmImageUpload = async () => {
     imageUrl,
     imageQuestion: question
   })
+  saveMessagesToStorage()
 
   await scrollToBottom()
 
@@ -456,6 +524,7 @@ const confirmImageUpload = async () => {
       content: response.analysis,
       timestamp: new Date()
     })
+    saveMessagesToStorage()
   } catch (error) {
     console.error('Image analysis error:', error)
     messages.value.push({
@@ -463,6 +532,7 @@ const confirmImageUpload = async () => {
       content: '抱歉，图片分析失败。请稍后再试。',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
   } finally {
     isLoading.value = false
     await scrollToBottom()
@@ -483,6 +553,7 @@ const generateExamQuestions = async () => {
       content: '请先上传或编辑文档内容，然后再生成题目。',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
     await scrollToBottom()
     return
   }
@@ -499,6 +570,7 @@ const generateExamQuestions = async () => {
     content: `请根据当前文档内容生成${questionCountText}道${questionTypeText}`,
     timestamp: new Date()
   })
+  saveMessagesToStorage()
 
   await scrollToBottom()
 
@@ -530,6 +602,7 @@ const generateExamQuestions = async () => {
       content: response.questions || '题目生成完成，但未收到结果',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
 
   } catch (error) {
     if (error instanceof Error) {
@@ -545,6 +618,7 @@ const generateExamQuestions = async () => {
         content: `题目生成失败：${error.response.data?.detail || error.response.statusText}`,
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     } else if (error && typeof error === 'object' && 'request' in error && error.request) {
       // @ts-ignore
       console.error('Network Error:', error.request)
@@ -553,6 +627,7 @@ const generateExamQuestions = async () => {
         content: '网络连接失败，请检查网络连接后重试。',
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     } else if (error instanceof Error) {
       console.error('Unknown Error:', error.message)
       messages.value.push({
@@ -560,6 +635,7 @@ const generateExamQuestions = async () => {
         content: `题目生成失败：${error.message}`,
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     }
   } finally {
     isLoading.value = false
@@ -574,6 +650,7 @@ const proofreadDocument = async (checkType: string) => {
       content: '请先上传或编辑文档内容，然后再进行校验。',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
     await scrollToBottom()
     return
   }
@@ -594,6 +671,7 @@ const proofreadDocument = async (checkType: string) => {
     content: `请对当前文档进行${checkTypeNames[checkType as keyof typeof checkTypeNames]}`,
     timestamp: new Date()
   })
+  saveMessagesToStorage()
 
   await scrollToBottom()
 
@@ -623,6 +701,7 @@ const proofreadDocument = async (checkType: string) => {
       content: response.result || '校验完成，但未收到结果',
       timestamp: new Date()
     })
+    saveMessagesToStorage()
 
     // 校验完成，不需要额外的错误导航功能
   } catch (error) {
@@ -639,6 +718,7 @@ const proofreadDocument = async (checkType: string) => {
         content: `校验请求失败：${error.response.data?.detail || error.response.statusText}`,
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     } else if (error && typeof error === 'object' && 'request' in error && error.request) {
       // @ts-ignore
       console.error('Network Error:', error.request)
@@ -647,6 +727,7 @@ const proofreadDocument = async (checkType: string) => {
         content: '网络连接失败，请检查网络连接后重试。',
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     } else if (error instanceof Error) {
       console.error('Unknown Error:', error.message)
       messages.value.push({
@@ -654,6 +735,7 @@ const proofreadDocument = async (checkType: string) => {
         content: `校验失败：${error.message}`,
         timestamp: new Date()
       })
+      saveMessagesToStorage()
     }
   } finally {
     isLoading.value = false
@@ -679,15 +761,30 @@ const handleClickOutside = (event: Event) => {
 
 // 初始化
 onMounted(() => {
-  // 添加欢迎消息
-  messages.value.push({
-    role: 'assistant',
-    content: '您好！我是PrintMind的AI排版助手。我可以帮您：\n\n• 分析文档并提供排版建议\n• 根据内容生成考试题目\n• 分析图片内容\n• 回答排版相关问题\n\n请告诉我您需要什么帮助？',
-    timestamp: new Date()
-  })
+  // 尝试从会话存储加载消息
+  const storedMessages = loadMessagesFromStorage()
+
+  if (storedMessages && storedMessages.length > 0) {
+    // 如果有存储的消息，加载它们
+    messages.value = storedMessages
+  } else {
+    // 如果没有存储的消息，添加欢迎消息
+    messages.value.push({
+      role: 'assistant',
+      content: '您好！我是PrintMind的AI排版助手。我可以帮您：\n\n• 分析文档并提供排版建议\n• 根据内容生成考试题目\n• 分析图片内容\n• 回答排版相关问题\n\n请告诉我您需要什么帮助？',
+      timestamp: new Date()
+    })
+    // 保存初始消息
+    saveMessagesToStorage()
+  }
 
   // 添加点击外部事件监听
   document.addEventListener('click', handleClickOutside)
+
+  // 滚动到底部
+  nextTick(() => {
+    scrollToBottom()
+  })
 })
 
 onUnmounted(() => {
