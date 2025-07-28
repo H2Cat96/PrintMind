@@ -377,7 +377,7 @@ const sendMessage = async () => {
     }))
 
     const response = await aiAPI.chat(userMessage, conversationHistory.slice(-10))
-    
+
     // 添加AI回复
     messages.value.push({
       role: 'assistant',
@@ -527,29 +527,33 @@ const generateExamQuestions = async () => {
     // 添加AI回复
     messages.value.push({
       role: 'assistant',
-      content: response.questions || response.data?.questions || '题目生成完成，但未收到结果',
+      content: response.questions || '题目生成完成，但未收到结果',
       timestamp: new Date()
     })
 
   } catch (error) {
-    console.error('Exam generation error:', error)
-
+    if (error instanceof Error) {
+      console.error('Exam generation error:', error)
+    }
     // 检查是否是网络错误或API错误
-    if (error.response) {
+    if (error && typeof error === 'object' && 'response' in error && error.response) {
+      // @ts-ignore
       console.error('API Error Response:', error.response.data)
       messages.value.push({
         role: 'assistant',
+        // @ts-ignore
         content: `题目生成失败：${error.response.data?.detail || error.response.statusText}`,
         timestamp: new Date()
       })
-    } else if (error.request) {
+    } else if (error && typeof error === 'object' && 'request' in error && error.request) {
+      // @ts-ignore
       console.error('Network Error:', error.request)
       messages.value.push({
         role: 'assistant',
         content: '网络连接失败，请检查网络连接后重试。',
         timestamp: new Date()
       })
-    } else {
+    } else if (error instanceof Error) {
       console.error('Unknown Error:', error.message)
       messages.value.push({
         role: 'assistant',
@@ -616,30 +620,34 @@ const proofreadDocument = async (checkType: string) => {
     // 添加AI回复
     messages.value.push({
       role: 'assistant',
-      content: response.result || response.data?.result || '校验完成，但未收到结果',
+      content: response.result || '校验完成，但未收到结果',
       timestamp: new Date()
     })
 
     // 校验完成，不需要额外的错误导航功能
   } catch (error) {
-    console.error('Document proofreading error:', error)
-
+    if (error instanceof Error) {
+      console.error('Document proofreading error:', error)
+    }
     // 检查是否是网络错误或API错误
-    if (error.response) {
+    if (error && typeof error === 'object' && 'response' in error && error.response) {
+      // @ts-ignore
       console.error('API Error Response:', error.response.data)
       messages.value.push({
         role: 'assistant',
+        // @ts-ignore
         content: `校验请求失败：${error.response.data?.detail || error.response.statusText}`,
         timestamp: new Date()
       })
-    } else if (error.request) {
+    } else if (error && typeof error === 'object' && 'request' in error && error.request) {
+      // @ts-ignore
       console.error('Network Error:', error.request)
       messages.value.push({
         role: 'assistant',
         content: '网络连接失败，请检查网络连接后重试。',
         timestamp: new Date()
       })
-    } else {
+    } else if (error instanceof Error) {
       console.error('Unknown Error:', error.message)
       messages.value.push({
         role: 'assistant',
@@ -664,7 +672,7 @@ const formatTime = (date: Date) => {
 const handleClickOutside = (event: Event) => {
   const target = event.target as HTMLElement
   // 检查是否点击在附件菜单区域外，但排除文件输入元素
-  if (!target.closest('.relative') && target.type !== 'file') {
+  if (!target.closest('.relative') && (target as HTMLInputElement).type !== 'file') {
     showAttachMenu.value = false
   }
 }

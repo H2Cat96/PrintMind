@@ -31,32 +31,39 @@ class DoubaoAIService:
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
         }
-        
+
         payload = {
             "model": self.model,
             "messages": messages,
             "max_tokens": self.max_tokens,
             "temperature": self.temperature
         }
-        
+
+        logger.info(f"Sending request to Doubao AI: {self.api_url}")
+        logger.info(f"Model: {self.model}")
+        logger.info(f"Payload: {json.dumps(payload, ensure_ascii=False)[:200]}...")
+
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     self.api_url,
                     headers=headers,
                     json=payload,
-                    timeout=aiohttp.ClientTimeout(total=60)
+                    timeout=aiohttp.ClientTimeout(total=30)  # 减少超时时间到30秒
                 ) as response:
+                    logger.info(f"Response status: {response.status}")
                     if response.status == 200:
-                        return await response.json()
+                        result = await response.json()
+                        logger.info(f"Response received: {str(result)[:200]}...")
+                        return result
                     else:
                         error_text = await response.text()
                         logger.error(f"Doubao AI API error: {response.status} - {error_text}")
-                        raise Exception(f"API请求失败: {response.status}")
-                        
+                        raise Exception(f"API请求失败: {response.status} - {error_text}")
+
         except asyncio.TimeoutError:
             logger.error("Doubao AI API timeout")
-            raise Exception("AI服务请求超时")
+            raise Exception("AI服务请求超时，请稍后再试")
         except Exception as e:
             logger.error(f"Doubao AI API request failed: {str(e)}")
             raise Exception(f"AI服务请求失败: {str(e)}")
